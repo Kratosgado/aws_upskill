@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: BEM10 Lab. Automating Creation of IAM Resources
+
+Resources:
+  OneTimePassword:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    Properties:
+      Name: iam-lab/one-time-password
+      Description: Auto-generated temporary password assigned to all IAM lab users.
+      GenerateSecretString:
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+        RequireEachIncludedType: true
+
+  # --- Groups ---
+  S3Group:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: S3UserGroup
+
+  EC2Group:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: EC2UserGroup
+
+  # --- Managed Policies ---
+  S3ListManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: S3ListPolicy
+      Description: Policy allowing listing of all S3 buckets
+      Groups:
+        - !Ref S3Group
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ListAllBuckets
+            Effect: Allow
+            Action:
+              - s3:ListAllMyBuckets
+              - s3:GetBucketLocation
+            Resource: "*"
+
+  EC2ListManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: EC2ListPolicy
+      Description: Policy allowing listing of EC2 resources
+      Groups:
+        - !Ref EC2Group
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DescribeEC2Resources
+            Effect: Allow
+            Action:
+              - ec2:DescribeInstances
+              - ec2:DescribeInstanceStatus
+              - ec2:DescribeImages
+              - ec2:DescribeKeyPairs
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeSubnets
+              - ec2:DescribeVpcs
+            Resource: "*"
+
+  EC2CreateInstanceManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: EC2CreateInstancePolicy
+      Description: Policy allowing creation of EC2 instances
+      Users:
+        - !Ref EC2User2
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowRunInstances
+            Effect: Allow
+            Action:
+              - ec2:RunInstances
+              - ec2:CreateTags
+            Resource: "*"
+
+  # --- Users ---
+  EC2User1:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: ec2-user1
+      LoginProfile:
+        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
+        PasswordResetRequired: true
+
+  EC2User2:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: ec2-user2
+      LoginProfile:
+        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
+        PasswordResetRequired: true
+
+  S3User:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: s3-user
+      LoginProfile:
+        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
+        PasswordResetRequired: true
+
+  # --- Group Memberships ---
+  EC2User1GroupMembership:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref EC2Group
+      Users:
+        - !Ref EC2User1
+
+  EC2User2GroupMembership:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref EC2Group
+      Users:
+        - !Ref EC2User2
+
+  S3UserGroupMembership:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref S3Group
+      Users:
+        - !Ref S3User
+
+Outputs:
+  SecretArn:
+    Description: ARN of the Secrets Manager secret holding the one-time password
+    Value: !Ref OneTimePassword
+
+  S3GroupName:
+    Description: IAM Group for S3 access
+    Value: !Ref S3Group
+
+  EC2GroupName:
+    Description: IAM Group for EC2 access
+    Value: !Ref EC2Group
+
+  EC2User1Name:
+    Value: !Ref EC2User1
+
+  EC2User2Name:
+    Value: !Ref EC2User2
+
+  S3UserName:
+    Value: !Ref S3User
