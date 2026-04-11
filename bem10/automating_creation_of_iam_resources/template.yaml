@@ -24,6 +24,11 @@ Resources:
     Properties:
       GroupName: EC2UserGroup
 
+  EC2AdminGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: EC2AdminUserGroup
+
   # Managed Policies
   S3ListManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -128,6 +133,13 @@ Resources:
       Users:
         - !Ref S3User
 
+  EC2User2AdminGroupMembership:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref EC2AdminGroup
+      Users:
+        - !Ref EC2User2
+
 Outputs:
   SecretArn:
     Description: ARN of the Secrets Manager secret holding the one-time password
@@ -141,11 +153,18 @@ Outputs:
     Description: IAM Group for EC2 access
     Value: !Ref EC2Group
 
+  EC2AdminGroupName:
+    Description: IAM Group for EC2 power users with instance creation rights
+    Value: !Ref EC2AdminGroup
+
   EC2User1Name:
+    Description: IAM User with EC2 list permissions only
     Value: !Ref EC2User1
 
   EC2User2Name:
+    Description: IAM User with EC2 list and create permissions
     Value: !Ref EC2User2
 
   S3UserName:
+    Description: IAM User with S3 list permissions
     Value: !Ref S3User
