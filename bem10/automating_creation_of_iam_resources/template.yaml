@@ -24,7 +24,7 @@ Resources:
     Properties:
       GroupName: EC2UserGroup
 
-  # --- Managed Policies ---
+  # Managed Policies
   S3ListManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
