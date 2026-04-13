@@ -30,6 +30,22 @@ Resources:
       GroupName: EC2AdminUserGroup
 
   # Managed Policies
+  ChangePasswordManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: ChangePasswordPolicy
+      Description: Policy allowing users to change their own password
+      Groups:
+        - !Ref S3Group
+        - !Ref EC2Group
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowChangePassword
+            Effect: Allow
+            Action: iam:ChangePassword
+            Resource: "arn:aws:iam::*:user/${aws:username}"
+
   S3ListManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
