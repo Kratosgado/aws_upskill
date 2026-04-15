@@ -6,7 +6,7 @@ Resources:
     Type: AWS::SecretsManager::Secret
     DeletionPolicy: Retain
     Properties:
-      Name: iam-lab/one-time-password
+      Name: iam-lab2/one-time-password
       Description: Auto-generated temporary password assigned to all IAM lab users.
       GenerateSecretString:
         PasswordLength: 16
