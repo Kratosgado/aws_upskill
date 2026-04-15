@@ -26,13 +26,6 @@ Resources:
     Properties:
       GroupName: EC2UserGroup
 
-  EC2AdminGroup:
-    Type: AWS::IAM::Group
-    DeletionPolicy: Delete
-    Properties:
-      GroupName: EC2AdminUserGroup
-
-  # Managed Policies
   ChangePasswordManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     DeletionPolicy: Delete
@@ -97,8 +90,8 @@ Resources:
     Properties:
       ManagedPolicyName: EC2CreateInstancePolicy
       Description: Policy allowing creation of EC2 instances
-      Users:
-        - !Ref EC2User2
+      Groups:
+        - !Ref EC2Group
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -123,6 +116,14 @@ Resources:
     Type: AWS::IAM::User
     DeletionPolicy: Delete
     Properties:
+      Policies:
+        - PolicyName: DenyEC2CreateInstance
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Deny
+                Action: ec2:RunInstances
+                Resource: "*"
       UserName: ec2-user2
       LoginProfile:
         Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
@@ -159,13 +160,6 @@ Resources:
       Users:
         - !Ref S3User
 
-  EC2User2AdminGroupMembership:
-    Type: AWS::IAM::UserToGroupAddition
-    Properties:
-      GroupName: !Ref EC2AdminGroup
-      Users:
-        - !Ref EC2User2
-
 Outputs:
   SecretArn:
     Description: ARN of the Secrets Manager secret holding the one-time password
@@ -179,16 +173,12 @@ Outputs:
     Description: IAM Group for EC2 access
     Value: !Ref EC2Group
 
-  EC2AdminGroupName:
-    Description: IAM Group for EC2 power users with instance creation rights
-    Value: !Ref EC2AdminGroup
-
   EC2User1Name:
-    Description: IAM User with EC2 list permissions only
+    Description: IAM User with EC2 list and create permissions
     Value: !Ref EC2User1
 
   EC2User2Name:
-    Description: IAM User with EC2 list and create permissions
+    Description: IAM User with EC2 list permissions only
     Value: !Ref EC2User2
 
   S3UserName:
