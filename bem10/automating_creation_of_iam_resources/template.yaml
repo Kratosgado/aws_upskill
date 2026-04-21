@@ -140,6 +140,15 @@ Resources:
         Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
         PasswordResetRequired: true
 
+  S3User2:
+    Type: AWS::IAM::User
+    DeletionPolicy: Delete
+    Properties:
+      UserName: s3-user2
+      LoginProfile:
+        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
+        PasswordResetRequired: true
+
   # --- Group Memberships ---
   EC2User1GroupMembership:
     Type: AWS::IAM::UserToGroupAddition
@@ -161,6 +170,13 @@ Resources:
       GroupName: !Ref S3Group
       Users:
         - !Ref S3User
+
+  S3User2GroupMembership:
+    Type: AWS::IAM::UserToGroupAddition
+    Properties:
+      GroupName: !Ref S3Group
+      Users:
+        - !Ref S3User2
 
 Outputs:
   SecretArn:
@@ -186,3 +202,7 @@ Outputs:
   S3UserName:
     Description: IAM User with S3 list permissions
     Value: !Ref S3User
+
+  S3User2Name:
+    Description: IAM User with S3 list permissions
+    Value: !Ref S3User2
