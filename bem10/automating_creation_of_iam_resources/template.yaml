@@ -1,6 +1,8 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: BEM10 Lab. Automating Creation of IAM Resources
 
+## Resources
+
 Resources:
   OneTimePassword:
     Type: AWS::SecretsManager::Secret
