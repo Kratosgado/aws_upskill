@@ -1,12 +1,9 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Description: BEM10 Lab. Automating Creation of IAM Resources
-
-## Resources
 
 Resources:
   OneTimePassword:
     Type: AWS::SecretsManager::Secret
-    DeletionPolicy: Delete
     Properties:
       Name: iam-lab-bem10/one-time-password
       Description: Auto-generated temporary password assigned to all IAM lab users.
@@ -18,19 +15,17 @@ Resources:
   # --- Groups ---
   S3Group:
     Type: AWS::IAM::Group
-    DeletionPolicy: Delete
     Properties:
       GroupName: S3UserGroup
 
   EC2Group:
     Type: AWS::IAM::Group
-    DeletionPolicy: Delete
     Properties:
       GroupName: EC2UserGroup
 
+  # --- Policies ---
   ChangePasswordManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
-    DeletionPolicy: Delete
     Properties:
       ManagedPolicyName: ChangePasswordPolicy
       Description: Policy allowing users to change their own password
@@ -38,41 +33,39 @@ Resources:
         - !Ref S3Group
         - !Ref EC2Group
       PolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Sid: AllowChangePassword
             Effect: Allow
             Action: iam:ChangePassword
-            Resource: "arn:aws:iam::*:user/${aws:username}"
+            Resource: arn:aws:iam::*:user/${aws:username}
 
   S3ListManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
-    DeletionPolicy: Delete
     Properties:
       ManagedPolicyName: S3ListPolicy
       Description: Policy allowing listing of all S3 buckets
       Groups:
         - !Ref S3Group
       PolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Sid: ListAllBuckets
             Effect: Allow
             Action:
               - s3:ListAllMyBuckets
               - s3:GetBucketLocation
-            Resource: "*"
+            Resource: '*'
 
-  EC2ListManagedPolicy:
+  EC2ManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
-    DeletionPolicy: Delete
     Properties:
-      ManagedPolicyName: EC2ListPolicy
-      Description: Policy allowing listing of EC2 resources
+      ManagedPolicyName: EC2Policy
+      Description: Policy allowing listing and creation of EC2 resources
       Groups:
         - !Ref EC2Group
       PolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Sid: DescribeEC2Resources
             Effect: Allow
@@ -84,69 +77,61 @@ Resources:
               - ec2:DescribeSecurityGroups
               - ec2:DescribeSubnets
               - ec2:DescribeVpcs
-            Resource: "*"
-
-  EC2CreateInstanceManagedPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    DeletionPolicy: Delete
-    Properties:
-      ManagedPolicyName: EC2CreateInstancePolicy
-      Description: Policy allowing creation of EC2 instances
-      Groups:
-        - !Ref EC2Group
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
+            Resource: '*'
           - Sid: AllowRunInstances
             Effect: Allow
             Action:
               - ec2:RunInstances
               - ec2:CreateTags
-            Resource: "*"
+            Resource: '*'
+
+  # Caps ec2-user2 to describe-only — RunInstances is outside this ceiling
+  EC2RestrictedBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: EC2RestrictedBoundary
+      Description: Permission boundary limiting EC2 users to describe-only actions
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:Describe*
+              - iam:ChangePassword
+            Resource: '*'
 
   # --- Users ---
   EC2User1:
     Type: AWS::IAM::User
-    DeletionPolicy: Delete
     Properties:
       UserName: ec2-user1
       LoginProfile:
-        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
+        Password: !Sub '{{resolve:secretsmanager:${OneTimePassword}}}'
         PasswordResetRequired: true
 
   EC2User2:
     Type: AWS::IAM::User
-    DeletionPolicy: Delete
     Properties:
-      Policies:
-        - PolicyName: DenyEC2CreateInstance
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Deny
-                Action: ec2:RunInstances
-                Resource: "*"
       UserName: ec2-user2
+      PermissionsBoundary: !Ref EC2RestrictedBoundary
       LoginProfile:
-        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
+        Password: !Sub '{{resolve:secretsmanager:${OneTimePassword}}}'
         PasswordResetRequired: true
 
   S3User:
     Type: AWS::IAM::User
-    DeletionPolicy: Delete
     Properties:
       UserName: s3-user
       LoginProfile:
-        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
+        Password: !Sub '{{resolve:secretsmanager:${OneTimePassword}}}'
         PasswordResetRequired: true
 
   S3User2:
     Type: AWS::IAM::User
-    DeletionPolicy: Delete
     Properties:
       UserName: s3-user2
       LoginProfile:
-        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
+        Password: !Sub '{{resolve:secretsmanager:${OneTimePassword}}}'
         PasswordResetRequired: true
 
   # --- Group Memberships ---
@@ -196,7 +181,7 @@ Outputs:
     Value: !Ref EC2User1
 
   EC2User2Name:
-    Description: IAM User with EC2 list permissions only
+    Description: IAM User with EC2 describe-only (boundary enforced)
     Value: !Ref EC2User2
 
   S3UserName:
