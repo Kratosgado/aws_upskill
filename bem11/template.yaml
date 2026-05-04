@@ -337,95 +337,74 @@ Resources:
         - !Ref SSMInstanceRole
 
   # =========================================================================
+  # EC2 Launch Templates — Centralizes shared configuration
+  # =========================================================================
+  WebLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub ${EnvironmentName}-web-lt
+      LaunchTemplateData:
+        ImageId: !Ref AmiId
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Name: !Ref SSMInstanceProfile
+        SecurityGroupIds:
+          - !Ref PublicWebSG
+        UserData: !Base64
+          Fn::Sub: |
+            #!/bin/bash
+            dnf update -y
+            dnf install -y httpd
+            systemctl enable httpd
+            systemctl start httpd
+            # Dynamic AZ discovery via IMDSv2
+            TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+            AZ=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+            cat > /var/www/html/index.html <<HTML
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>BEM11 — Web Server $AZ</title>
+              <style>
+                body { font-family: Arial, sans-serif; max-width: 600px; margin: 80px auto; text-align: center; }
+                h1   { color: #232f3e; }
+                .badge { background: #ff9900; color: #fff; padding: 6px 16px; border-radius: 4px; font-size: 0.9rem; }
+              </style>
+            </head>
+            <body>
+              <h1>Hello from Essilfie Mbeah</h1>
+              <p><strong>Lab:</strong> BEM11 — Highly Available Multi-AZ VPC</p>
+              <p class="badge">Public Web Server &mdash; $AZ</p>
+            </body>
+            </html>
+            HTML
+
+  # =========================================================================
   # EC2 — Public Web Tier (AZ-1 and AZ-2)
-  # Apache installed via User Data; HTML page displays name and lab.
   # =========================================================================
   PublicWebInstance1:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: !Ref AmiId
-      InstanceType: !Ref InstanceType
+      LaunchTemplate:
+        LaunchTemplateId: !Ref WebLaunchTemplate
+        Version: !GetAtt WebLaunchTemplate.LatestVersionNumber
       SubnetId: !Ref PublicSubnet1
-      IamInstanceProfile: !Ref SSMInstanceProfile
-      SecurityGroupIds:
-        - !Ref PublicWebSG
-      UserData:
-        Fn::Base64 !Sub: |
-          #!/bin/bash
-          dnf update -y
-          dnf install -y httpd
-          systemctl enable httpd
-          systemctl start httpd
-          cat > /var/www/html/index.html <<'EOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>BEM11 — Web Server AZ-1</title>
-            <style>
-              body { font-family: Arial, sans-serif; max-width: 600px; margin: 80px auto; text-align: center; }
-              h1   { color: #232f3e; }
-              .badge { background: #ff9900; color: #fff; padding: 6px 16px; border-radius: 4px; font-size: 0.9rem; }
-            </style>
-          </head>
-          <body>
-            <h1>Hello from Essilfie Mbeah</h1>
-            <p><strong>Lab:</strong> BEM11 — Highly Available Multi-AZ VPC</p>
-            <p class="badge">Public Web Server &mdash; AZ-1</p>
-          </body>
-          </html>
-          EOF
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-public-web-az1
-        - Key: Tier
-          Value: Public
-        - Key: AZ
-          Value: AZ-1
 
   PublicWebInstance2:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: !Ref AmiId
-      InstanceType: !Ref InstanceType
+      LaunchTemplate:
+        LaunchTemplateId: !Ref WebLaunchTemplate
+        Version: !GetAtt WebLaunchTemplate.LatestVersionNumber
       SubnetId: !Ref PublicSubnet2
-      IamInstanceProfile: !Ref SSMInstanceProfile
-      SecurityGroupIds:
-        - !Ref PublicWebSG
-      UserData: !Base64 |
-        #!/bin/bash
-        dnf update -y
-        dnf install -y httpd
-        systemctl enable httpd
-        systemctl start httpd
-        cat > /var/www/html/index.html <<'EOF'
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>BEM11 — Web Server AZ-2</title>
-          <style>
-            body { font-family: Arial, sans-serif; max-width: 600px; margin: 80px auto; text-align: center; }
-            h1   { color: #232f3e; }
-            .badge { background: #ff9900; color: #fff; padding: 6px 16px; border-radius: 4px; font-size: 0.9rem; }
-          </style>
-        </head>
-        <body>
-          <h1>Hello from Essilfie Mbeah</h1>
-          <p><strong>Lab:</strong> BEM11 — Highly Available Multi-AZ VPC</p>
-          <p class="badge">Public Web Server &mdash; AZ-2</p>
-        </body>
-        </html>
-        EOF
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-public-web-az2
-        - Key: Tier
-          Value: Public
-        - Key: AZ
-          Value: AZ-2
 
   # =========================================================================
   # EC2 — Private Application Tier (AZ-1 and AZ-2)
@@ -508,7 +487,7 @@ Outputs:
     Value: !Ref NatEIP2
 
   PublicWebInstance1Id:
-    Description: Public web instance in AZ-1 (connect via SSM)
+    Description: Public web instance in AZ-1
     Value: !Ref PublicWebInstance1
 
   PublicWebInstance1PublicIP:
