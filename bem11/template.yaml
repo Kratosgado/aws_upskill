@@ -2,9 +2,9 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: |
   BEM11 Lab — Highly Available, Secure, Multi-AZ VPC with Public/Private EC2 Tiers managed exclusively via AWS Systems Manager Session Manager.
 
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 # Parameters
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 Parameters:
   EnvironmentName:
     Type: String
