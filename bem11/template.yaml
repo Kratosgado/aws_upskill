@@ -357,26 +357,13 @@ Resources:
             dnf install -y httpd
             systemctl enable httpd
             systemctl start httpd
-            # Dynamic AZ discovery via IMDSv2
-            TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
-            AZ=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
             cat > /var/www/html/index.html <<HTML
             <!DOCTYPE html>
             <html lang="en">
-            <head>
-              <meta charset="UTF-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-              <title>BEM11 — Web Server $AZ</title>
-              <style>
-                body { font-family: Arial, sans-serif; max-width: 600px; margin: 80px auto; text-align: center; }
-                h1   { color: #232f3e; }
-                .badge { background: #ff9900; color: #fff; padding: 6px 16px; border-radius: 4px; font-size: 0.9rem; }
-              </style>
-            </head>
+            <head> <title>BEM11 — Web Server </title> </head>
             <body>
-              <h1>Hello from Essilfie Mbeah</h1>
-              <p><strong>Lab:</strong> BEM11 — Highly Available Multi-AZ VPC</p>
-              <p class="badge">Public Web Server &mdash; $AZ</p>
+              <h1>Mbeah Mbeah</h1>
+              <p>Lab: BEM11 — Highly Available Multi-AZ VPC</p>
             </body>
             </html>
             HTML

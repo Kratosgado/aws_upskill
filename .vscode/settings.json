@@ -1,3 +1,7 @@
 {
-    "gitConfigUser.selectedProfile": "Kratosgado"
+    "gitConfigUser.selectedProfile": "Kratosgado",
+    "snyk.advanced.autoSelectOrganization": true,
+    "yaml.schemas": {
+        "https://raw.githubusercontent.com/awslabs/goformation/master/schema/cloudformation.schema.json": "file:///home/esslifie/projects/practice/aws_upskill/bem11/template.yaml"
+    }
 }
