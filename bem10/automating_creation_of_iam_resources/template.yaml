@@ -1,9 +1,11 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description: BEM10 Lab. Automating Creation of IAM Resources
 
 Resources:
   OneTimePassword:
+    DeletionPolicy: Delete
     Type: AWS::SecretsManager::Secret
+    UpdateReplacePolicy: Retain
     Properties:
       Name: iam-lab-bem10/one-time-password
       Description: Auto-generated temporary password assigned to all IAM lab users.
@@ -33,7 +35,7 @@ Resources:
         - !Ref S3Group
         - !Ref EC2Group
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: AllowChangePassword
             Effect: Allow
@@ -48,14 +50,14 @@ Resources:
       Groups:
         - !Ref S3Group
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: ListAllBuckets
             Effect: Allow
             Action:
               - s3:ListAllMyBuckets
               - s3:GetBucketLocation
-            Resource: '*'
+            Resource: "*"
 
   EC2ManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -65,7 +67,7 @@ Resources:
       Groups:
         - !Ref EC2Group
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: DescribeEC2Resources
             Effect: Allow
@@ -77,13 +79,13 @@ Resources:
               - ec2:DescribeSecurityGroups
               - ec2:DescribeSubnets
               - ec2:DescribeVpcs
-            Resource: '*'
+            Resource: "*"
           - Sid: AllowRunInstances
             Effect: Allow
             Action:
               - ec2:RunInstances
               - ec2:CreateTags
-            Resource: '*'
+            Resource: "*"
 
   # Caps ec2-user2 to describe-only — RunInstances is outside this ceiling
   EC2RestrictedBoundary:
@@ -92,76 +94,55 @@ Resources:
       ManagedPolicyName: EC2RestrictedBoundary
       Description: Permission boundary limiting EC2 users to describe-only actions
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
               - ec2:Describe*
               - iam:ChangePassword
-            Resource: '*'
+            Resource: "*"
 
   # --- Users ---
   EC2User1:
     Type: AWS::IAM::User
     Properties:
       UserName: ec2-user1
+      Groups:
+        - !Ref EC2Group
       LoginProfile:
-        Password: !Sub '{{resolve:secretsmanager:${OneTimePassword}}}'
+        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
         PasswordResetRequired: true
 
   EC2User2:
     Type: AWS::IAM::User
     Properties:
       UserName: ec2-user2
+      Groups:
+        - !Ref EC2Group
       PermissionsBoundary: !Ref EC2RestrictedBoundary
       LoginProfile:
-        Password: !Sub '{{resolve:secretsmanager:${OneTimePassword}}}'
+        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
         PasswordResetRequired: true
 
   S3User:
     Type: AWS::IAM::User
     Properties:
       UserName: s3-user
+      Groups:
+        - !Ref S3Group
       LoginProfile:
-        Password: !Sub '{{resolve:secretsmanager:${OneTimePassword}}}'
+        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
         PasswordResetRequired: true
 
   S3User2:
     Type: AWS::IAM::User
     Properties:
       UserName: s3-user2
+      Groups:
+        - !Ref S3Group
       LoginProfile:
-        Password: !Sub '{{resolve:secretsmanager:${OneTimePassword}}}'
+        Password: !Sub "{{resolve:secretsmanager:${OneTimePassword}}}"
         PasswordResetRequired: true
-
-  # --- Group Memberships ---
-  EC2User1GroupMembership:
-    Type: AWS::IAM::UserToGroupAddition
-    Properties:
-      GroupName: !Ref EC2Group
-      Users:
-        - !Ref EC2User1
-
-  EC2User2GroupMembership:
-    Type: AWS::IAM::UserToGroupAddition
-    Properties:
-      GroupName: !Ref EC2Group
-      Users:
-        - !Ref EC2User2
-
-  S3UserGroupMembership:
-    Type: AWS::IAM::UserToGroupAddition
-    Properties:
-      GroupName: !Ref S3Group
-      Users:
-        - !Ref S3User
-
-  S3User2GroupMembership:
-    Type: AWS::IAM::UserToGroupAddition
-    Properties:
-      GroupName: !Ref S3Group
-      Users:
-        - !Ref S3User2
 
 Outputs:
   SecretArn:
